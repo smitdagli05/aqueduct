@@ -78,6 +78,9 @@ class APIClient:
 
     GET_DYNAMIC_ENGINE_STATUS_ROUTE = "/api/integration/dynamic-engine/status"
     EDIT_DYNAMIC_ENGINE_ROUTE_TEMPLATE = "/api/integration/dynamic-engine/%s/edit"
+    #new
+    LIST_WORKFLOW_RUNS_ROUTE_TEMPLATE = "/api/workflow/%s/runs"
+
 
     # Auth header
     API_KEY_HEADER = "api-key"
@@ -577,3 +580,19 @@ class APIClient:
             logger().warning("Artifact result unavailable due to unsuccessful execution.")
 
         return (return_value, execution_status)
+    
+    def list_workflow_runs(self, flow_id: str) -> List[Dict[str, Any]]:
+        """Fetches a list of workflow runs for the given flow ID.
+
+        Args:
+            flow_id: The ID of the flow for which to fetch the workflow runs.
+
+        Returns:
+            A list of workflow runs.
+        """
+        self._check_config()
+        headers = self._generate_auth_headers()
+        url = self.construct_full_url(self.LIST_WORKFLOW_RUNS_ROUTE_TEMPLATE % flow_id)
+        response = requests.get(url, headers=headers)
+        self.raise_errors(response)
+        return response.json()

@@ -146,3 +146,21 @@ def test_metrics_and_checks_on_table_describe():
     assert metric_check["Label"] == check_name
     assert metric_check["Description"] == check_description
     assert "Level" in metric_check
+
+def test_numeric_artifact_history():
+    # Create a mocked APIClient instance
+    api_client = MagicMock()
+    
+    # Mock the history data returned by the APIClient
+    history_data = [10, 20, 30, 40, 50]
+    api_client.get_numeric_artifact_history = MagicMock(return_value=history_data)
+
+    # Create a NumericArtifact instance
+    artifact_id = generate_uuid()
+    numeric_artifact = NumericArtifact(id=artifact_id, api_client=api_client)
+
+    # Call the history function on the NumericArtifact
+    returned_history_data = numeric_artifact.history()
+
+    # Check if the history values are as expected
+    assert returned_history_data == history_data, f"Expected {history_data} but got {returned_history_data}"

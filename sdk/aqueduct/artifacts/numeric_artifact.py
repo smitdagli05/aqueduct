@@ -6,12 +6,14 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 from aqueduct.artifacts import bool_artifact
+from aqueduct.client import APIClient
 from aqueduct.artifacts import preview as artifact_utils
 from aqueduct.artifacts._create import create_metric_or_check_artifact
 from aqueduct.artifacts.base_artifact import BaseArtifact
 from aqueduct.constants.enums import (
     ArtifactType,
     CheckSeverity,
+    ExecutionStatus,
     ExecutionMode,
     FunctionGranularity,
     FunctionType,
@@ -320,3 +322,33 @@ class NumericArtifact(BaseArtifact):
         input_operator = self._dag.must_get_operator(with_output_artifact_id=self._artifact_id)
         print(format_header_for_print(f"'{input_operator.name}' Numeric Artifact"))
         print(json.dumps(self._describe(), sort_keys=False, indent=4))
+
+    def history(self, client: APIClient) -> List[Number]:
+        """Fetches the history of this NumericArtifact.
+
+        Args:
+            client: The APIClient instance configured to connect to the server.
+
+        Returns:
+            A list of all computed metric values up until this run.
+        """
+        if not self._from_flow_run:
+            raise NotImplementedError("Fetching history is only supported for flow-run artifacts.")
+        
+        metric_history = []
+        flow = self._dag.flow()
+        flow_id = flow.id
+
+        runs = client.list_workflow_runs(flow_id)  # Use APIClient to fetch workflow runs
+
+        for run in runs:
+            run_id = run.id
+            try:
+                artifact_data, exec_status = client.get_artifact_result_data(run_id, self.name)
+                if exec_status == ExecutionStatus.SUCCEEDED:
+                    metric_history.append(artifact_data)
+            except:
+                # Ignore runs where the artifact is not found.
+                pass
+
+        return metric_history[::-1]  # Reverse the order to return latest first.
